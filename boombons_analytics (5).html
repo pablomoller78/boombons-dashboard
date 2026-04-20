@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bo^m!bons · Anàlisi de Vendes</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3ef;
+  --surface: #ffffff;
+  --surface2: #f8f6f2;
+  --surface3: #edeae4;
+  --border: #ddd9d2;
+  --border2: #ccc8c0;
+  --text: #1a1714;
+  --muted: #7a7570;
+  --muted2: #aaa8a4;
+  --accent: #e8531a;
+  --green: #2a7a50;
+  --green-bg: #e8f5ee;
+  --red: #b02020;
+  --red-bg: #fde8e8;
+  --blue: #1a5490;
+  --blue-bg: #e3eef8;
+  --gold: #a07020;
+  --gold-bg: #fdf3e0;
+  --r: 6px;
+  --r2: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+/* LAYOUT */
+.shell { display: flex; min-height: 100vh; }
+.sidebar { width: 200px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.main { flex: 1; min-width: 0; padding: 28px 32px; }
+
+/* BRAND */
+.brand { padding: 22px 20px 18px; border-bottom: 1px solid var(--border); }
+.brand-name { font-family: 'DM Serif Display', serif; font-size: 19px; letter-spacing: -0.3px; }
+.brand-name span { color: var(--accent); }
+.brand-sub { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: .07em; text-transform: uppercase; }
+
+/* NAV */
+.nav { padding: 14px 10px; flex: 1; }
+.nav-label { font-size: 10px; color: var(--muted2); letter-spacing: .1em; text-transform: uppercase; padding: 10px 8px 5px; }
+.nav-btn { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 10px; border-radius: var(--r); border: none; background: none; color: var(--muted); font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; text-align: left; transition: all .14s; margin-bottom: 1px; }
+.nav-btn:hover { background: var(--surface2); color: var(--text); }
+.nav-btn.active { background: var(--surface3); color: var(--text); }
+
+/* SYNC STATUS */
+.sync-bar { padding: 14px 18px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+.sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted2); margin-right: 5px; }
+.sync-dot.ok { background: var(--green); }
+.sync-dot.loading { background: var(--blue); animation: pulse 1s infinite; }
+.sync-dot.err { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.btn-refresh { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11px; font-weight: 500; color: var(--accent); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; }
+.btn-refresh:hover { opacity: .8; }
+
+/* PAGE HEADER */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+.page-title { font-family: 'DM Serif Display', serif; font-size: 24px; letter-spacing: -0.4px; }
+.page-title span { color: var(--muted); font-size: 15px; font-family: 'DM Sans', sans-serif; font-weight: 400; }
+.date-chip { font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; }
+
+/* SECTIONS */
+.section { display: none; }
+.section.active { display: block; }
+
+/* KPI GRID */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 16px 18px; border-top: 3px solid var(--accent-c, var(--accent)); }
+.kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px; }
+.kpi-value { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); line-height: 1.1; }
+.kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+/* CARDS */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 18px 20px; margin-bottom: 16px; }
+.card-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-weight: 500; margin-bottom: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+/* BARS */
+.bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.bar-label { font-size: 12px; color: var(--muted); width: 150px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; height: 7px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+.bar-val { font-size: 12px; font-weight: 500; min-width: 60px; text-align: right; }
+
+/* TABLE */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { padding: 0 8px 9px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; border-bottom: 1px solid var(--border); text-align: left; }
+.tbl td { padding: 9px 8px; border-bottom: 1px solid var(--border); }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(--surface2); }
+.tbl th.r, .tbl td.r { text-align: right; }
+.tbl th.c, .tbl td.c { text-align: center; }
+
+/* PILLS */
+.pill { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+.pill-green { background: var(--green-bg); color: var(--green); }
+.pill-red   { background: var(--red-bg);   color: var(--red); }
+.pill-gold  { background: var(--gold-bg);  color: var(--gold); }
+.pill-blue  { background: var(--blue-bg);  color: var(--blue); }
+
+/* SPARKLINE */
+.spark { display: flex; align-items: flex-end; gap: 2px; height: 36px; }
+.spark-bar { flex: 1; border-radius: 2px 2px 0 0; min-width: 3px; opacity: .7; transition: opacity .15s; }
+.spark-bar:hover { opacity: 1; }
+.spark-bar.today { opacity: 1; }
+
+/* DAY TABLE */
+.day-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.day-row:last-child { border-bottom: none; }
+
+/* LOADING */
+.loading-state { padding: 3rem; text-align: center; color: var(--muted); }
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; margin-bottom: 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ERROR */
+.error-box { background: var(--red-bg); border: 1px solid #f0b0b0; border-radius: var(--r); padding: 14px 16px; font-size: 12px; color: var(--red); margin-bottom: 16px; }
+
+/* FILTER */
+.filter-row { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+.filter-row select, .filter-row input {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r);
+  padding: 6px 10px; color: var(--text); font-size: 12px; font-family: 'DM Sans', sans-serif;
+}
+.filter-row input { flex: 1; min-width: 160px; }
+.filter-row input:focus, .filter-row select:focus { outline: none; border-color: var(--accent); }
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { padding: 16px 14px 70px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .mobile-nav { display: flex; }
+}
+.mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0); }
+.mob-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; border: none; background: none; color: var(--muted); font-size: 9px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; gap: 3px; }
+.mob-btn.active { color: var(--accent); }
+.mob-btn svg { flex-shrink: 0; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-name">bo<span>^</span>m!bons</div>
+      <div class="brand-sub">Anàlisi de vendes</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Vistes</div>
+      <button class="nav-btn active" onclick="goTo('resum')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Resum
+      </button>
+      <button class="nav-btn" onclick="goTo('produc')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Per Producte
+      </button>
+      <button class="nav-btn" onclick="goTo('diari')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Diari
+      </button>
+      <button class="nav-btn" onclick="goTo('categ')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>
+        Categoria
+      </button>
+      <button class="nav-btn" onclick="goTo('marge')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Marges
+      </button>
+    </nav>
+    <div class="sync-bar">
+      <div><span class="sync-dot" id="sync-dot"></span><span id="sync-lbl">Connectant...</span></div>
+      <div id="sync-time" style="margin-top:3px;font-size:10px;color:var(--muted2)"></div>
+      <button class="btn-refresh" onclick="loadData()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Actualitzar ara
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- RESUM -->
+    <div class="section active" id="sec-resum">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Resum <span id="title-mes">— mes actual</span></h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+        <select id="month-sel" onchange="loadData()" style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--muted);font-family:'DM Sans',sans-serif;cursor:pointer">
+          <option value="YTD">📊 Acumulat YTD 2026</option>
+          <option value="Abril">Abril 2026</option>
+          <option value="Maig">Maig 2026</option>
+          <option value="Juny">Juny 2026</option>
+          <option value="Juliol">Juliol 2026</option>
+          <option value="Agost">Agost 2026</option>
+          <option value="Setembre">Setembre 2026</option>
+          <option value="Octubre">Octubre 2026</option>
+          <option value="Novembre">Novembre 2026</option>
+          <option value="Desembre">Desembre 2026</option>
+        </select>
+        <div class="date-chip" id="date-chip"></div>
+      </div>
+      </div>
+      <div id="resum-error" class="hidden error-box"></div>
+      <div id="resum-loading" class="loading-state"><div class="spinner"></div><br>Carregant dades de Google Sheets...</div>
+      <div id="resum-content" class="hidden">
+        <div class="kpi-grid">
+          <div class="kpi" style="--accent-c:var(--accent)">
+            <div class="kpi-label">Vendes totals</div>
+            <div class="kpi-value" id="k-total">—</div>
+            <div class="kpi-sub" id="k-total-u">— unitats</div>
+          </div>
+          <div class="kpi" style="--accent-c:var(--green)">
+            <div class="kpi-label">Marge brut est.</div>
+            <div class="kpi-value" id="k-marge">—</div>
+            <div class="kpi-sub" id="k-marge-p">—</div>
+          </div>
+          <div class="kpi" style="--accent-c:var(--blue)">
+            <div class="kpi-label">Dies amb vendes</div>
+            <div class="kpi-value" id="k-dies">—</div>
+            <div class="kpi-sub" id="k-dies-sub">dies registrats</div>
+          </div>
+          <div class="kpi" style="--accent-c:var(--gold)">
+            <div class="kpi-label">Tiquet mig / dia</div>
+            <div class="kpi-value" id="k-tiquet">—</div>
+            <div class="kpi-sub">vendes per dia actiu</div>
+          </div>
+        </div>
+
+        <div class="grid3">
+          <div class="card">
+            <div class="card-title">Top 10 productes — import acumulat</div>
+            <div id="top-bars"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Per categoria</div>
+            <div id="cat-bars"></div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Evolució diària — unitats venudes</div>
+            <div class="spark" id="spark-main" style="height:48px;margin-bottom:8px"></div>
+            <div id="daily-mini"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Resum per setmana</div>
+            <div id="weekly-tbl"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PER PRODUCTE -->
+    <div class="section" id="sec-produc">
+      <div class="page-header"><h1 class="page-title">Per producte</h1></div>
+      <div class="filter-row">
+        <input type="text" id="prod-search" placeholder="Cerca producte o SKU..." oninput="renderProduc()">
+        <select id="prod-cat" onchange="renderProduc()">
+          <option value="">Totes les categories</option>
+        </select>
+        <select id="prod-sort" onchange="renderProduc()">
+          <option value="import">Ordenar per import</option>
+          <option value="uds">Ordenar per unitats</option>
+          <option value="marge">Ordenar per marge</option>
+          <option value="sku">Ordenar per SKU</option>
+        </select>
+      </div>
+      <div class="card">
+        <table class="tbl" id="prod-tbl">
+          <thead><tr>
+            <th>SKU</th><th>Producte</th><th>Categoria</th>
+            <th class="r">Uds.</th><th class="r">Import €</th>
+            <th class="r">Cost €</th><th class="r">Marge €</th><th class="r">Marge %</th>
+          </tr></thead>
+          <tbody id="prod-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DIARI -->
+    <div class="section" id="sec-diari">
+      <div class="page-header"><h1 class="page-title">Vendes diàries</h1></div>
+      <div class="card">
+        <table class="tbl">
+          <thead><tr>
+            <th>Data</th><th class="r">Uds.</th><th class="r">Import €</th>
+            <th class="r">Cost €</th><th class="r">Marge €</th><th class="r">Marge %</th>
+            <th>Top SKU</th>
+          </tr></thead>
+          <tbody id="diari-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CATEGORIA -->
+    <div class="section" id="sec-categ">
+      <div class="page-header"><h1 class="page-title">Per categoria</h1></div>
+      <div class="kpi-grid" id="categ-kpis" style="grid-template-columns:repeat(3,1fr)"></div>
+      <div class="card">
+        <div class="card-title">Detall per categoria</div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Categoria</th><th class="r">Uds.</th><th class="r">Import €</th>
+            <th class="r">Marge €</th><th class="r">Marge %</th><th class="r">% s/Total</th>
+          </tr></thead>
+          <tbody id="categ-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MARGES -->
+    <div class="section" id="sec-marge">
+      <div class="page-header"><h1 class="page-title">Anàlisi de marges</h1></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Marges per producte (top 20)</div>
+          <div id="marge-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Semàfor de rendibilitat</div>
+          <div id="marge-semaf"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav">
+  <button class="mob-btn active" onclick="goTo('resum');setMob(this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Resum
+  </button>
+  <button class="mob-btn" onclick="goTo('produc');setMob(this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Productes
+  </button>
+  <button class="mob-btn" onclick="goTo('diari');setMob(this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Diari
+  </button>
+  <button class="mob-btn" onclick="goTo('categ');setMob(this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/></svg>
+    Categories
+  </button>
+  <button class="mob-btn" onclick="goTo('marge');setMob(this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+    Marges
+  </button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════
+// Google Apps Script URL — acts as CORS-safe proxy
+const GS_URL = 'https://script.google.com/macros/s/AKfycbzOReAb15cHqFw-qwHjygxfb9WLyrXKypIrfTMPCMCsLW1LRDppjgxWTWk1NF1pU-FhTg/exec';
+
+// Tab names per month (add new months here as needed)
+const MONTH_TABS = {
+  1:'Gener', 2:'Febrer', 3:'Març', 4:'Abril',
+  5:'Maig',  6:'Juny',   7:'Juliol', 8:'Agost',
+  9:'Setembre', 10:'Octubre', 11:'Novembre', 12:'Desembre'
+};
+// Current tab = current month name
+function currentTab() {
+  const sel = document.getElementById('month-sel');
+  if(sel && sel.value) return sel.value;
+  return MONTH_TABS[new Date().getMonth() + 1] || 'Abril';
+}
+
+// Catalogue: SKU -> {nom, cat, cost, pv}
+const CAT = {
+  "CB-001":{nom:"Caixa bombons 1u",cat:"Caixes Bombons",cost:0.88,pv:2.5},
+  "CB-004":{nom:"Caixa bombons 4u",cat:"Caixes Bombons",cost:2.17,pv:8},
+  "CB-009":{nom:"Caixa bombons 9u",cat:"Caixes Bombons",cost:3.49,pv:16.5},
+  "CB-016":{nom:"Caixa bombons 16u",cat:"Caixes Bombons",cost:5.5,pv:28},
+  "TX-001":{nom:"Tauleta negra gerds",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-002":{nom:"Tauleta negra llimona",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-003":{nom:"Tauleta negra pa oli",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-004":{nom:"Tauleta llet coco",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-005":{nom:"Tauleta llet avellana",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-006":{nom:"Tauleta blanc llimona",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-007":{nom:"Tauleta blanc gerds",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-008":{nom:"Tauleta blanc oreo",cat:"Tauletes Xocolata",cost:0.7,pv:5.5},
+  "TX-009":{nom:"Tauleta ruby festucs",cat:"Tauletes Xocolata",cost:0.7,pv:6.5},
+  "BL-001":{nom:"Boleta blava (P)",cat:"Boletes",cost:2.5,pv:7},
+  "BL-002":{nom:"Boleta vermella (P)",cat:"Boletes",cost:2.5,pv:7},
+  "BL-003":{nom:"Boleta marró (P)",cat:"Boletes",cost:2.5,pv:7},
+  "BL-004":{nom:"Boleta verda (P)",cat:"Boletes",cost:2.5,pv:7},
+  "BL-005":{nom:"Boleta taronja (P)",cat:"Boletes",cost:2.5,pv:7},
+  "BL-006":{nom:"Boleta blava (G)",cat:"Boletes",cost:4.5,pv:13},
+  "BL-007":{nom:"Boleta vermella (G)",cat:"Boletes",cost:4.5,pv:13},
+  "BL-008":{nom:"Boleta marró (G)",cat:"Boletes",cost:4.5,pv:13},
+  "BL-009":{nom:"Boleta verda (G)",cat:"Boletes",cost:4.5,pv:13},
+  "BL-010":{nom:"Boleta taronja (G)",cat:"Boletes",cost:4.5,pv:13},
+  "BS-001":{nom:"Bosseta blava (P)",cat:"Bossetes",cost:2.5,pv:7},
+  "BS-002":{nom:"Bosseta vermella (P)",cat:"Bossetes",cost:2.5,pv:7},
+  "BS-003":{nom:"Bosseta marró (P)",cat:"Bossetes",cost:2.5,pv:7},
+  "BS-004":{nom:"Bosseta verda (P)",cat:"Bossetes",cost:2.5,pv:7},
+  "BS-005":{nom:"Bosseta taronja (P)",cat:"Bossetes",cost:2.5,pv:7},
+  "BS-006":{nom:"Bosseta blava (G)",cat:"Bossetes",cost:4.5,pv:13},
+  "BS-007":{nom:"Bosseta vermella (G)",cat:"Bossetes",cost:4.5,pv:13},
+  "BS-008":{nom:"Bosseta marró (G)",cat:"Bossetes",cost:4.5,pv:13},
+  "BS-009":{nom:"Bosseta verda (G)",cat:"Bossetes",cost:4.5,pv:13},
+  "BS-010":{nom:"Bosseta taronja (G)",cat:"Bossetes",cost:4.5,pv:13},
+  "VS-001":{nom:"Vasset negra",cat:"Vassets",cost:1,pv:3.5},
+  "VS-002":{nom:"Vasset llet",cat:"Vassets",cost:1,pv:3.5},
+  "VS-003":{nom:"Vasset llet canyella",cat:"Vassets",cost:1,pv:3.5},
+  "VS-004":{nom:"Vasset blanca",cat:"Vassets",cost:1,pv:3.5},
+  "PI-001":{nom:"Piruleta negra gerds",cat:"Piruletes",cost:0.55,pv:2.8},
+  "PI-002":{nom:"Piruleta negra llimona",cat:"Piruletes",cost:0.55,pv:2.8},
+  "PI-003":{nom:"Piruleta llet avellana",cat:"Piruletes",cost:0.55,pv:2.8},
+  "PI-004":{nom:"Piruleta llet lacasitos",cat:"Piruletes",cost:0.55,pv:2.8},
+  "PI-005":{nom:"Piruleta blanca oreo",cat:"Piruletes",cost:0.55,pv:2.8},
+  "CK-001":{nom:"Cookie lemon pie",cat:"Cookies",cost:2.3,pv:2.2},
+  "CK-002":{nom:"Cookie nutella",cat:"Cookies",cost:2.3,pv:2.2},
+  "CK-003":{nom:"Cookie red velvet",cat:"Cookies",cost:2.3,pv:2.2},
+  "CK-004":{nom:"Cookie lotus vegana",cat:"Cookies",cost:2.3,pv:2.2},
+  "CK-005":{nom:"Cookie pistacho dubai",cat:"Cookies",cost:2.3,pv:2.5},
+  "PG-001":{nom:"Postres got coco fruits",cat:"Postres Got",cost:2.5,pv:4.5},
+  "PG-002":{nom:"Postres got llimona",cat:"Postres Got",cost:2.5,pv:4.5},
+  "PG-003":{nom:"Postres got cafè xoco",cat:"Postres Got",cost:2.5,pv:4.5},
+  "PP-001":{nom:"Pastís porció cheesecake",cat:"Pastissos Porcions",cost:3,pv:5.5},
+  "PP-002":{nom:"Pastís porció lemon pie",cat:"Pastissos Porcions",cost:3,pv:5.5},
+  "PP-003":{nom:"Pastís porció red velvet",cat:"Pastissos Porcions",cost:3,pv:5.5},
+  "PP-004":{nom:"Pastís porció carrot cake",cat:"Pastissos Porcions",cost:3,pv:5.5},
+  "PP-005":{nom:"Pastís porció chocobombon",cat:"Pastissos Porcions",cost:3,pv:5.5},
+  "PA-001":{nom:"Pastís sencer cheesecake",cat:"Pastissos Sencers",cost:15,pv:45},
+  "PA-002":{nom:"Pastís sencer lemon pie",cat:"Pastissos Sencers",cost:15,pv:45},
+  "PA-003":{nom:"Pastís sencer red velvet",cat:"Pastissos Sencers",cost:15,pv:45},
+  "PA-004":{nom:"Pastís sencer carrot cake",cat:"Pastissos Sencers",cost:15,pv:28},
+  "PA-005":{nom:"Pastís sencer chocobombon",cat:"Pastissos Sencers",cost:15,pv:28},
+  "SG-001":{nom:"Banana bread (p)",cat:"Sense Gluten",cost:3,pv:3.8},
+  "SG-002":{nom:"Llimona amap (p)",cat:"Sense Gluten",cost:3,pv:3.8},
+  "SG-003":{nom:"Carbassa (p)",cat:"Sense Gluten",cost:3,pv:3.8},
+  "SG-004":{nom:"Xoco cookie",cat:"Sense Gluten",cost:3,pv:3.5},
+  "SG-005":{nom:"Cacauet cookie",cat:"Sense Gluten",cost:3,pv:3.5},
+  "SG-006":{nom:"Civada coco cookie",cat:"Sense Gluten",cost:3,pv:3.5},
+  "SG-007":{nom:"Granola dàtils",cat:"Sense Gluten",cost:3,pv:4.2},
+  "SG-008":{nom:"Granola fruits secs",cat:"Sense Gluten",cost:3,pv:4.2},
+  "CA-001":{nom:"Caramel pot variat",cat:"Caramels",cost:1,pv:5.9},
+  "CA-002":{nom:"Caramel mel i llimona",cat:"Caramels",cost:1,pv:5.9},
+  "CA-003":{nom:"Caramel mel llim gengb",cat:"Caramels",cost:1,pv:5.9},
+  "CA-004":{nom:"Caramel piruleta",cat:"Caramels",cost:0.55,pv:2.5},
+  "AL-001":{nom:"Alfajor",cat:"Altres",cost:0.8,pv:1.5},
+  "OP-001":{nom:"Ou Pasqua llet petit",cat:"Ous Pasqua",cost:8,pv:25},
+  "OP-002":{nom:"Ou Pasqua llet mitjà",cat:"Ous Pasqua",cost:12,pv:35},
+  "OP-003":{nom:"Ou Pasqua negra petit",cat:"Ous Pasqua",cost:8,pv:25},
+  "OP-004":{nom:"Ou Pasqua negra mitjà",cat:"Ous Pasqua",cost:12,pv:35},
+  "OP-005":{nom:"Ou Pasqua blanc petit",cat:"Ous Pasqua",cost:8,pv:25},
+  "OP-006":{nom:"Ou Pasqua blanc mitjà",cat:"Ous Pasqua",cost:12,pv:35},
+  "OP-007":{nom:"Ou Pasqua vegà petit",cat:"Ous Pasqua",cost:8,pv:25},
+  "OP-008":{nom:"Ou Pasqua vegà gran",cat:"Ous Pasqua",cost:12,pv:35},
+};
+
+const CAT_COLORS = {
+  "Caixes Bombons":"#e8531a","Tauletes Xocolata":"#1a5490","Boletes":"#2a7a50",
+  "Bossetes":"#a07020","Vassets":"#5c3a8a","Piruletes":"#993556","Cookies":"#3b6d11",
+  "Postres Got":"#0f6e8a","Pastissos Porcions":"#7a5210","Pastissos Sencers":"#1a3a8a",
+  "Sense Gluten":"#2a6a20","Caramels":"#a05010","Altres":"#5a5550","Ous Pasqua":"#8b1a4a"
+};
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let DATA = null; // parsed data from Sheets
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
+const EUR = n => new Intl.NumberFormat('ca-ES',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(+n||0);
+const fmtD = d => d;
+const pct = (a,b) => b>0 ? ((a/b)*100).toFixed(1)+'%' : '—';
+
+function setSyncStatus(state, msg='') {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-lbl');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = msg || {ok:'Actualitzat',loading:'Carregant...',err:'Error de connexió'}[state];
+  if(state==='ok') {
+    document.getElementById('sync-time').textContent =
+      'Últim: ' + new Date().toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'});
+  }
+}
+
+function pillMarge(pctVal) {
+  const v = parseFloat(pctVal);
+  if(v >= 50) return `<span class="pill pill-green">${pctVal}</span>`;
+  if(v >= 20) return `<span class="pill pill-gold">${pctVal}</span>`;
+  if(v >= 0)  return `<span class="pill pill-blue">${pctVal}</span>`;
+  return `<span class="pill pill-red">${pctVal}</span>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// PARSE MATRIX from Apps Script (array of arrays)
+// Structure: row 0-2 = titles, row 3 = headers (#,Cat,SKU,Nom,Stock,Cost,PV,Mg€,Mg%,date1,date2...)
+//            row 4+ = data  
+// ══════════════════════════════════════════════════════════
+function parseMatrix(rows) {
+  const skuData = {};
+  const dayTotals = {};
+  let dates = [];
+  let skuCol = -1, dateStartCol = -1;
+
+  // Find header row (contains 'Codi SKU' or 'SKU')
+  let hdrRow = -1;
+  for(let i = 0; i < Math.min(8, rows.length); i++) {
+    const idx = rows[i].findIndex(c => String(c).trim() === 'Codi SKU' || String(c).trim() === 'SKU');
+    if(idx >= 0) {
+      hdrRow = i;
+      skuCol = idx;
+      // Dates start after the fixed columns (find first date-like column)
+      for(let j = skuCol + 1; j < rows[i].length; j++) {
+        const val = String(rows[i][j]).trim();
+        // Date patterns: "4-abr", "04/04", "4", number
+        if(val && (val.includes('-') || val.includes('/') || /^\d{1,2}$/.test(val))) {
+          dateStartCol = j;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  if(hdrRow < 0 || skuCol < 0) {
+    // Fallback: scan for SKU patterns
+    for(let i = 0; i < rows.length; i++) {
+      const idx = rows[i].findIndex(c => /^[A-Z]{2}-\d{3}$/.test(String(c).trim()));
+      if(idx >= 0) {
+        hdrRow = i - 1;
+        skuCol = idx;
+        dateStartCol = idx + 1;
+        break;
+      }
+    }
+  }
+
+  if(hdrRow >= 0 && dateStartCol > 0) {
+    const hdr = rows[hdrRow];
+    dates = hdr.slice(dateStartCol).map(d => String(d).trim()).filter(d => d);
+  }
+
+  // Parse data rows
+  for(let i = hdrRow + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if(!row || row.length <= skuCol) continue;
+    const sku = String(row[skuCol] || '').trim();
+    if(!sku || !/^[A-Z]{2}-\d+/.test(sku)) continue;
+
+    const info = CAT[sku] || {
+      nom: String(row[skuCol+1]||sku).trim(),
+      cat: String(row[1]||'Altres').trim(),
+      cost: parseFloat(String(row[5]||'0').replace(',','.')) || 0,
+      pv:   parseFloat(String(row[6]||'0').replace(',','.')) || 0
+    };
+
+    if(!skuData[sku]) {
+      skuData[sku] = {sku, nom:info.nom, cat:info.cat, cost:info.cost, pv:info.pv, totalUds:0, byDate:{}};
+    }
+
+    dates.forEach((date, di) => {
+      const raw = String(row[dateStartCol + di] || '').trim().replace(',','.');
+      const val = parseInt(raw) || 0;
+      if(val > 0) {
+        skuData[sku].totalUds += val;
+        skuData[sku].byDate[date] = (skuData[sku].byDate[date]||0) + val;
+        if(!dayTotals[date]) dayTotals[date] = {uds:0, import:0, cost:0};
+        dayTotals[date].uds    += val;
+        dayTotals[date].import += val * info.pv;
+        dayTotals[date].cost   += val * info.cost;
+      }
+    });
+  }
+
+  return { skuData, dayTotals, dates };
+}
+
+// Keep old CSV parser as fallback (not used)
+// ══════════════════════════════════════════════════════════
+// PARSE SHEET MATRIX
+// Input: 2D array from Apps Script (rows x cols)
+// Structure:
+//   Row 0: Title
+//   Row 1: Subtitle
+//   Row 2: Dates row — cols 9+ contain "4-abr", "5-abr" etc.
+//   Row 3: Column headers
+//   Row 4+: Data rows (SKU in col 2) OR category headers (text only)
+// ══════════════════════════════════════════════════════════
+function parseSheetMatrix(rows) {
+  if(!rows || !rows.length) return {skuData:{}, dayTotals:{}, dates:[]};
+
+  // Step 1 — find the dates row (first row with 3+ date-like values)
+  const datePat = /^\d{1,2}[-\/][a-zA-Z]{2,4}$/;
+  let dateRowIdx = -1, dateStartCol = 9;
+  for(let i=0; i<Math.min(8, rows.length); i++) {
+    const hits = rows[i].map((c,j)=>({c:String(c||'').trim(),j}))
+                        .filter(({c})=>datePat.test(c));
+    if(hits.length >= 2) {
+      dateRowIdx = i;
+      dateStartCol = hits[0].j;
+      break;
+    }
+  }
+
+  // Extract date labels (filter blanks)
+  const dates = dateRowIdx >= 0
+    ? rows[dateRowIdx].slice(dateStartCol)
+        .map(d => String(d||'').trim())
+        .filter(d => d && datePat.test(d))
+    : [];
+
+  const skuData  = {};
+  const dayTotals = {};
+
+  // Step 2 — scan all rows for SKU data
+  // Auto-detect SKU column (first column with XX-NNN pattern in data rows)
+  let skuCol = 2; // default
+  for(let i=3; i<Math.min(10, rows.length); i++) {
+    for(let j=0; j<Math.min(6, (rows[i]||[]).length); j++) {
+      if(/^[A-Z]{2}-\d{2,3}$/.test(String(rows[i][j]||'').trim())) {
+        skuCol = j; break;
+      }
+    }
+    if(skuCol !== 2) break;
+  }
+  console.log('SKU column detected at index:', skuCol, '| Date start col:', dateStartCol);
+
+  for(let i=0; i<rows.length; i++) {
+    const row = rows[i];
+    if(!row || row.length < skuCol+1) continue;
+
+    const rawSku = String(row[skuCol]||'').trim();
+    if(!/^[A-Z]{2}-\d{2,3}$/.test(rawSku)) continue;
+
+    const sku = rawSku;
+
+    // Get product info — from CAT dict first, fallback to sheet columns
+    const sheetNom  = String(row[3]||'').trim();
+    const sheetCat  = String(row[1]||'').trim();
+    const sheetCost = parseFloat(String(row[5]||'0').replace(/[^0-9.,]/g,'').replace(',','.')) || 0;
+    const sheetPV   = parseFloat(String(row[6]||'0').replace(/[^0-9.,]/g,'').replace(',','.')) || 0;
+
+    const info = CAT[sku] || {
+      nom:  sheetNom  || sku,
+      cat:  sheetCat  || 'Altres',
+      cost: sheetCost,
+      pv:   sheetPV,
+    };
+
+    if(!skuData[sku]) {
+      skuData[sku] = {
+        sku,
+        nom:  info.nom,
+        cat:  info.cat,
+        cost: info.cost,
+        pv:   info.pv,
+        totalUds: 0,
+        byDate: {}
+      };
+    }
+
+    // Step 3 — read units for each date column
+    for(let di=0; di<dates.length; di++) {
+      const col = dateStartCol + di;
+      if(col >= row.length) continue;
+      const raw = String(row[col]||'').replace(/[^0-9]/g,'');
+      const val = parseInt(raw) || 0;
+      if(val <= 0) continue;
+
+      const date = dates[di];
+      skuData[sku].totalUds        += val;
+      skuData[sku].byDate[date]     = (skuData[sku].byDate[date]||0) + val;
+
+      if(!dayTotals[date]) dayTotals[date] = {uds:0, import:0, cost:0};
+      dayTotals[date].uds    += val;
+      dayTotals[date].import += val * info.pv;
+      dayTotals[date].cost   += val * info.cost;
+    }
+  }
+
+  const nSku = Object.keys(skuData).length;
+  const nDay = Object.values(dayTotals).filter(d=>d.uds>0).length;
+  console.log(`✅ Parsed: ${nSku} SKUs amb vendes, ${nDay} dies amb activitat`);
+  if(nSku > 0) {
+    const sample = Object.entries(skuData).filter(([,v])=>v.totalUds>0).slice(0,3)
+      .map(([k,v])=>`${k}:${v.totalUds}u`).join(', ');
+    console.log('Sample:', sample);
+  }
+
+  return { skuData, dayTotals, dates };
+}
+
+
+// ══════════════════════════════════════════════════════════
+// LOAD DATA
+// ══════════════════════════════════════════════════════════
+async function fetchTab(tabName) {
+  const url = GS_URL + '?tab=' + encodeURIComponent(tabName) + '&t=' + Date.now();
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  const json = await resp.json();
+  if(json.error) throw new Error(json.error);
+  return json.data;
+}
+
+function mergeData(dataA, dataB) {
+  // Merge two parsed datasets (for YTD)
+  const merged = { skuData: {...dataA.skuData}, dayTotals: {...dataA.dayTotals}, dates: [...dataA.dates] };
+  
+  Object.entries(dataB.skuData).forEach(([sku, sb]) => {
+    if(!merged.skuData[sku]) {
+      merged.skuData[sku] = {...sb};
+    } else {
+      merged.skuData[sku].totalUds += sb.totalUds;
+      Object.entries(sb.byDate).forEach(([d, u]) => {
+        merged.skuData[sku].byDate[d] = (merged.skuData[sku].byDate[d]||0) + u;
+      });
+    }
+  });
+
+  Object.entries(dataB.dayTotals).forEach(([d, v]) => {
+    if(!merged.dayTotals[d]) {
+      merged.dayTotals[d] = {...v};
+    } else {
+      merged.dayTotals[d].uds    += v.uds;
+      merged.dayTotals[d].import += v.import;
+      merged.dayTotals[d].cost   += v.cost;
+    }
+  });
+
+  // Add new dates
+  dataB.dates.forEach(d => { if(!merged.dates.includes(d)) merged.dates.push(d); });
+
+  return merged;
+}
+
+async function loadData() {
+  setSyncStatus('loading');
+  document.getElementById('resum-loading').classList.remove('hidden');
+  document.getElementById('resum-content').classList.add('hidden');
+  document.getElementById('resum-error').classList.add('hidden');
+
+  const tab = currentTab();
+
+  try {
+    if(tab === 'YTD') {
+      // Load all months up to current and merge
+      const monthsToLoad = ['Gener','Febrer','Març','Abril','Maig','Juny',
+        'Juliol','Agost','Setembre','Octubre','Novembre','Desembre']
+        .slice(0, new Date().getMonth() + 1);
+
+      let merged = null;
+      let loaded = 0;
+      for(const m of monthsToLoad) {
+        try {
+          const rows = await fetchTab(m);
+          const parsed = parseSheetMatrix(rows);
+          const hasData = Object.values(parsed.skuData).some(s=>s.totalUds>0);
+          if(hasData) {
+            merged = merged ? mergeData(merged, parsed) : parsed;
+            loaded++;
+          }
+        } catch(e) {
+          console.log('Month', m, 'not available:', e.message);
+        }
+      }
+      if(!merged) throw new Error('Cap mes amb dades trobat');
+      DATA = merged;
+      console.log('YTD: merged', loaded, 'months');
+    } else {
+      // Single month
+      const rows = await fetchTab(tab);
+      DATA = parseSheetMatrix(rows);
+    }
+
+    setSyncStatus('ok');
+    renderAll();
+  } catch(e) {
+    setSyncStatus('err');
+    document.getElementById('resum-loading').classList.add('hidden');
+    const err = document.getElementById('resum-error');
+    err.classList.remove('hidden');
+    err.innerHTML = '<strong>Error carregant dades:</strong> ' + e.message +
+      '<br><small>Comprova que el Apps Script té accés a la pestanya "' + tab + '"</small>';
+    console.error('loadData error:', e);
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════════════
+function renderAll() {
+  if(!DATA) return;
+  const titMes = document.getElementById('title-mes');
+  const tab = currentTab();
+  if(titMes) titMes.textContent = tab === 'YTD' ? '— Acumulat YTD 2026' : '— ' + tab + ' 2026';
+  renderResum();
+  renderProduc();
+  renderDiari();
+  renderCateg();
+  renderMarge();
+  populateFilters();
+}
+
+function renderResum() {
+  const { skuData, dayTotals } = DATA;
+  document.getElementById('resum-loading').classList.add('hidden');
+  document.getElementById('resum-content').classList.remove('hidden');
+
+  const allSkus = Object.values(skuData);
+  const totalUds = allSkus.reduce((a,s)=>a+s.totalUds, 0);
+  const totalImp = allSkus.reduce((a,s)=>a+s.totalUds*s.pv, 0);
+  const totalCost = allSkus.reduce((a,s)=>a+s.totalUds*s.cost, 0);
+  const marge = totalImp - totalCost;
+  const margeP = totalImp > 0 ? (marge/totalImp*100).toFixed(1) : 0;
+  const dies = Object.values(dayTotals).filter(d=>d.uds>0).length;
+  const tiquet = dies > 0 ? totalImp/dies : 0;
+
+  document.getElementById('k-total').textContent = EUR(totalImp);
+  document.getElementById('k-total-u').textContent = totalUds.toLocaleString() + ' unitats';
+  document.getElementById('k-marge').textContent = EUR(marge);
+  document.getElementById('k-marge-p').textContent = margeP + '% marge brut estimat';
+  document.getElementById('k-dies').textContent = dies;
+  document.getElementById('k-tiquet').textContent = EUR(tiquet);
+
+  // Top 10 bars
+  const top10 = [...allSkus].filter(s=>s.totalUds>0)
+    .map(s=>({...s, imp: s.totalUds*s.pv}))
+    .sort((a,b)=>b.imp-a.imp).slice(0,10);
+  const maxImp = top10[0]?.imp || 1;
+  document.getElementById('top-bars').innerHTML = top10.map(s=>`
+    <div class="bar-row">
+      <span class="bar-label" title="${s.nom}">${s.nom}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(s.imp/maxImp*100).toFixed(1)}%;background:${CAT_COLORS[s.cat]||'#888'}"></div></div>
+      <span class="bar-val">${EUR(s.imp)}</span>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:12px">Sense dades</div>';
+
+  // Category bars
+  const catTot = {};
+  allSkus.forEach(s=>{
+    if(!catTot[s.cat]) catTot[s.cat]={imp:0,uds:0};
+    catTot[s.cat].imp += s.totalUds*s.pv;
+    catTot[s.cat].uds += s.totalUds;
+  });
+  const cats = Object.entries(catTot).filter(([,v])=>v.uds>0).sort((a,b)=>b[1].imp-a[1].imp);
+  const maxCat = cats[0]?.[1].imp || 1;
+  document.getElementById('cat-bars').innerHTML = cats.map(([cat,v])=>`
+    <div class="bar-row">
+      <span class="bar-label">${cat}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(v.imp/maxCat*100).toFixed(1)}%;background:${CAT_COLORS[cat]||'#888'}"></div></div>
+      <span class="bar-val">${EUR(v.imp)}</span>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:12px">Sense dades</div>';
+
+  // Sparkline
+  const dayArr = Object.entries(dayTotals).sort((a,b)=>a[0].localeCompare(b[0]));
+  const maxDay = Math.max(...dayArr.map(d=>d[1].uds), 1);
+  document.getElementById('spark-main').innerHTML = dayArr.map(([d,v])=>`
+    <div class="spark-bar" style="height:${Math.max(4,(v.uds/maxDay*100)).toFixed(0)}%;background:${v.uds>0?'var(--accent)':'var(--border)'}" title="${d}: ${v.uds} uds · ${EUR(v.import)}"></div>
+  `).join('');
+
+  // Daily mini table (last 7 days with data)
+  const recentDays = dayArr.filter(d=>d[1].uds>0).slice(-7);
+  document.getElementById('daily-mini').innerHTML = recentDays.map(([d,v])=>`
+    <div class="day-row">
+      <span style="color:var(--muted)">${d}</span>
+      <span>${v.uds} uds</span>
+      <span style="font-weight:500">${EUR(v.import)}</span>
+      <span style="color:var(--green);font-size:11px">${pct(v.import-v.cost, v.import)} mg</span>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:12px;padding:.5rem 0">Sense dades</div>';
+
+  // Weekly summary
+  const weeks = {};
+  dayArr.forEach(([d,v])=>{
+    const wk = 'Setm. ' + Math.ceil(parseInt(d)||1/7);
+    if(!weeks[wk]) weeks[wk]={uds:0,imp:0,cost:0,dies:0};
+    if(v.uds>0){ weeks[wk].uds+=v.uds; weeks[wk].imp+=v.import; weeks[wk].cost+=v.cost; weeks[wk].dies++; }
+  });
+  document.getElementById('weekly-tbl').innerHTML = Object.entries(weeks).filter(([,v])=>v.uds>0).map(([w,v])=>`
+    <div class="day-row">
+      <span style="font-weight:500">${w}</span>
+      <span style="color:var(--muted)">${v.dies}d · ${v.uds}u</span>
+      <span style="font-weight:500">${EUR(v.imp)}</span>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:12px">Sense dades</div>';
+}
+
+function renderProduc() {
+  if(!DATA) return;
+  const q = (document.getElementById('prod-search')?.value||'').toLowerCase();
+  const catF = document.getElementById('prod-cat')?.value||'';
+  const sortF = document.getElementById('prod-sort')?.value||'import';
+
+  let rows = Object.values(DATA.skuData).filter(s=>{
+    if(catF && s.cat !== catF) return false;
+    if(q && !s.sku.toLowerCase().includes(q) && !s.nom.toLowerCase().includes(q)) return false;
+    return true;
+  }).map(s=>({
+    ...s,
+    imp: s.totalUds * s.pv,
+    costTot: s.totalUds * s.cost,
+    margeTot: s.totalUds * (s.pv - s.cost),
+    margeP: s.pv > 0 ? ((s.pv-s.cost)/s.pv*100).toFixed(1) : 0
+  }));
+
+  rows.sort((a,b) => {
+    if(sortF==='uds') return b.totalUds-a.totalUds;
+    if(sortF==='marge') return b.margeTot-a.margeTot;
+    if(sortF==='sku') return a.sku.localeCompare(b.sku);
+    return b.imp-a.imp;
+  });
+
+  document.getElementById('prod-body').innerHTML = rows.map(s=>`
+    <tr>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted)">${s.sku}</td>
+      <td style="font-weight:500">${s.nom}</td>
+      <td><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--surface3);color:var(--muted)">${s.cat}</span></td>
+      <td class="r">${s.totalUds||'—'}</td>
+      <td class="r">${s.imp>0?EUR(s.imp):'—'}</td>
+      <td class="r" style="color:var(--muted)">${s.costTot>0?EUR(s.costTot):'—'}</td>
+      <td class="r">${s.margeTot>0?EUR(s.margeTot):'—'}</td>
+      <td class="r">${s.imp>0?pillMarge(s.margeP+'%'):'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted)">Sense dades</td></tr>';
+}
+
+function renderDiari() {
+  if(!DATA) return;
+  const { dayTotals, skuData } = DATA;
+  const days = Object.entries(dayTotals).sort((a,b)=>b[0].localeCompare(a[0]));
+
+  document.getElementById('diari-body').innerHTML = days.filter(([,v])=>v.uds>0).map(([d,v])=>{
+    const mg = v.import - v.cost;
+    const mgP = v.import > 0 ? (mg/v.import*100).toFixed(1) : 0;
+    // Find top SKU for this day
+    let topSku = '', topUds = 0;
+    Object.values(skuData).forEach(s=>{
+      const u = s.byDate[d]||0;
+      if(u > topUds){ topUds=u; topSku=s.nom; }
+    });
+    return `<tr>
+      <td style="font-weight:500">${d}</td>
+      <td class="r">${v.uds}</td>
+      <td class="r">${EUR(v.import)}</td>
+      <td class="r" style="color:var(--muted)">${EUR(v.cost)}</td>
+      <td class="r" style="color:var(--green)">${EUR(mg)}</td>
+      <td class="r">${pillMarge(mgP+'%')}</td>
+      <td style="color:var(--muted);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${topSku||'—'} ${topUds>0?'('+topUds+'u)':''}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Sense dades</td></tr>';
+}
+
+function renderCateg() {
+  if(!DATA) return;
+  const catTot = {};
+  Object.values(DATA.skuData).forEach(s=>{
+    if(!catTot[s.cat]) catTot[s.cat]={uds:0,imp:0,cost:0};
+    catTot[s.cat].uds += s.totalUds;
+    catTot[s.cat].imp += s.totalUds*s.pv;
+    catTot[s.cat].cost += s.totalUds*s.cost;
+  });
+  const totalImp = Object.values(catTot).reduce((a,v)=>a+v.imp,0)||1;
+  const cats = Object.entries(catTot).filter(([,v])=>v.uds>0).sort((a,b)=>b[1].imp-a[1].imp);
+
+  // KPI cards top 3
+  document.getElementById('categ-kpis').innerHTML = cats.slice(0,3).map(([cat,v])=>{
+    const mg = v.imp-v.cost;
+    const mgP = v.imp>0?(mg/v.imp*100).toFixed(0):0;
+    return `<div class="kpi" style="--accent-c:${CAT_COLORS[cat]||'#888'}">
+      <div class="kpi-label">${cat}</div>
+      <div class="kpi-value">${EUR(v.imp)}</div>
+      <div class="kpi-sub">${v.uds} uds · marge ${mgP}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('categ-body').innerHTML = cats.map(([cat,v])=>{
+    const mg=v.imp-v.cost;
+    const mgP=v.imp>0?(mg/v.imp*100).toFixed(1):0;
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${CAT_COLORS[cat]||'#888'};display:inline-block"></span>${cat}</span></td>
+      <td class="r">${v.uds}</td>
+      <td class="r">${EUR(v.imp)}</td>
+      <td class="r" style="color:var(--green)">${EUR(mg)}</td>
+      <td class="r">${pillMarge(mgP+'%')}</td>
+      <td class="r" style="color:var(--muted)">${(v.imp/totalImp*100).toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMarge() {
+  if(!DATA) return;
+  const skus = Object.values(DATA.skuData)
+    .filter(s=>s.totalUds>0)
+    .map(s=>({...s, margeP: s.pv>0?(s.pv-s.cost)/s.pv*100:0, margeTot:s.totalUds*(s.pv-s.cost)}))
+    .sort((a,b)=>b.margeP-a.margeP)
+    .slice(0,20);
+
+  const maxMg = Math.max(...skus.map(s=>s.margeP),1);
+  document.getElementById('marge-bars').innerHTML = skus.map(s=>`
+    <div class="bar-row">
+      <span class="bar-label" title="${s.nom}">${s.nom}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(s.margeP/maxMg*100).toFixed(1)}%;background:${s.margeP>=50?'var(--green)':s.margeP>=20?'var(--gold)':'var(--red)'}"></div></div>
+      <span class="bar-val" style="color:${s.margeP>=50?'var(--green)':s.margeP>=20?'var(--gold)':'var(--red)'}">${s.margeP.toFixed(0)}%</span>
+    </div>`).join('');
+
+  const semaf = {
+    alt:   skus.filter(s=>s.margeP>=50),
+    mig:   skus.filter(s=>s.margeP>=20&&s.margeP<50),
+    baix:  skus.filter(s=>s.margeP>=0&&s.margeP<20),
+    perdua:skus.filter(s=>s.margeP<0),
+  };
+  document.getElementById('marge-semaf').innerHTML = [
+    ['🟢 Alt (>50%)', semaf.alt, 'pill-green'],
+    ['🟡 Mig (20-50%)', semaf.mig, 'pill-gold'],
+    ['🔵 Baix (0-20%)', semaf.baix, 'pill-blue'],
+    ['🔴 Pèrdua (<0%)', semaf.perdua, 'pill-red'],
+  ].map(([label, items, cls])=>`
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:6px">${label} — ${items.length} productes</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${items.map(s=>`<span class="pill ${cls}" title="${s.nom} · ${s.margeP.toFixed(1)}%">${s.sku}</span>`).join('')||'<span style="font-size:11px;color:var(--muted2)">Cap</span>'}
+      </div>
+    </div>`).join('');
+}
+
+function populateFilters() {
+  if(!DATA) return;
+  const cats = [...new Set(Object.values(DATA.skuData).map(s=>s.cat))].sort();
+  ['prod-cat'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    while(el.options.length>1) el.remove(1);
+    cats.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+function goTo(sec) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+sec).classList.add('active');
+  document.querySelector(`.nav-btn[onclick*="${sec}"]`)?.classList.add('active');
+}
+
+function setMob(btn) {
+  document.querySelectorAll('.mob-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+document.getElementById('date-chip').textContent =
+  new Date().toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'long'});
+
+// Set selector to current month
+const _curMonth = MONTH_TABS[new Date().getMonth() + 1];
+const _sel = document.getElementById('month-sel');
+if(_sel && _curMonth) {
+  const opt = [..._sel.options].find(o => o.value === _curMonth);
+  if(opt) _sel.value = _curMonth;
+}
+
+loadData();
+// Auto-refresh every 5 minutes
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
