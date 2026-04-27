@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boombons · Dashboard Vendes 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#ffffff;--bg2:#f5f4f0;--bg3:#eeedea;
+    --text:#1a1a1a;--text2:#666;--text3:#999;
+    --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+    --radius:8px;--radius-lg:12px;
+    --accent:#7F77DD;--accent2:#1D9E75;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+      --text:#f5f5f5;--text2:#aaa;--text3:#666;
+      --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+    }
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
+  .container{max-width:960px;margin:0 auto;padding:1.5rem 1rem}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px;background:var(--bg);border-radius:var(--radius-lg);padding:1rem 1.25rem;border:0.5px solid var(--border)}
+  .topbar-left h1{font-size:18px;font-weight:600;color:var(--text)}
+  .topbar-left .sub{font-size:12px;color:var(--text2);margin-top:2px}
+  .topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .refresh-btn{font-size:12px;padding:7px 14px;cursor:pointer;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-weight:500;transition:background .15s}
+  .refresh-btn:hover{background:var(--bg3)}
+  .badge-live{font-size:10px;padding:3px 9px;border-radius:20px;background:#EAF3DE;color:#3B6D11;font-weight:600;letter-spacing:.3px}
+  /* SELECTOR */
+  .view-selector{display:flex;background:var(--bg2);border-radius:var(--radius);padding:3px;gap:3px;border:0.5px solid var(--border)}
+  .view-btn{font-size:12px;padding:5px 14px;cursor:pointer;border-radius:6px;border:none;background:none;color:var(--text2);font-weight:500;transition:all .15s;white-space:nowrap}
+  .view-btn.active{background:var(--accent);color:#fff}
+  .view-btn:hover:not(.active){background:var(--bg3);color:var(--text)}
+  .vs-divider{width:1px;height:20px;background:var(--border2);flex-shrink:0}
+  /* BANNER */
+  .cum-banner{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:9px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2)}
+  .cum-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;transition:background .2s}
+  /* TABS */
+  .tabs{display:flex;gap:0;margin-bottom:1.25rem;background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);overflow:hidden;padding:4px}
+  .tab{flex:1;font-size:13px;padding:8px 12px;cursor:pointer;color:var(--text2);border:none;background:none;border-radius:var(--radius);transition:all .15s;font-weight:400}
+  .tab.active{background:var(--accent);color:#fff;font-weight:500}
+  .tab:hover:not(.active){background:var(--bg2)}
+  /* METRICS */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+  .metric{background:var(--bg);border-radius:var(--radius-lg);padding:14px 16px;border:0.5px solid var(--border)}
+  .metric.highlight{border-color:var(--accent);border-width:1.5px}
+  .metric .lbl{font-size:10px;color:var(--text2);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase;font-weight:500}
+  .metric .val{font-size:22px;font-weight:600;color:var(--text)}
+  .metric .sub2{font-size:10px;color:var(--text3);margin-top:3px}
+  /* SECTIONS */
+  .section{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:1.25rem;margin-bottom:1rem}
+  .section-title{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:8px}
+  .sbadge{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .sbadge.mes{background:#EEEDFE;color:#534AB7}
+  .sbadge.cum{background:#E1F5EE;color:#0F6E56}
+  .chart-wrap{position:relative;width:100%;height:220px}
+  .chart-wrap-lg{position:relative;width:100%;height:280px}
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+  @media(max-width:560px){.charts-row{grid-template-columns:1fr}}
+  /* LEGEND */
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11px;color:var(--text2)}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .legend .dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  /* TABLE */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;padding:8px 10px;color:var(--text2);border-bottom:0.5px solid var(--border);font-weight:500;white-space:nowrap;font-size:11px;letter-spacing:.3px;text-transform:uppercase}
+  td{padding:8px 10px;color:var(--text);border-bottom:0.5px solid var(--border)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--bg2)}
+  .badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+  .badge-ok{background:#EAF3DE;color:#3B6D11}
+  .badge-warn{background:#FAEEDA;color:#854F0B}
+  .badge-bad{background:#FCEBEB;color:#A32D2D}
+  /* MISC */
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+  .filter-row select{font-size:12px;padding:6px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer}
+  .loading{text-align:center;padding:4rem;color:var(--text2);font-size:14px}
+  .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .err-box{background:#FCEBEB;border:0.5px solid #F7C1C1;border-radius:var(--radius-lg);padding:1.25rem;color:#A32D2D;font-size:13px;margin-bottom:1rem}
+  .tab-content{display:none}
+  .tab-content.active{display:block}
+  .mono{font-family:'SF Mono',Monaco,monospace;font-size:11px;color:var(--text2)}
+  .footer{text-align:center;padding:1.5rem;font-size:11px;color:var(--text3)}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>🍫 Boombons · Vendes 2026</h1>
+      <div class="sub" id="last-updated">Carregant dades del Google Sheets...</div>
+    </div>
+    <div class="topbar-right">
+      <div class="view-selector">
+        <button class="view-btn active" onclick="setView('mes',this)">Mes en curs</button>
+        <button class="view-btn" onclick="setView('cum',this)">CUM 2026</button>
+      </div>
+      <div class="vs-divider"></div>
+      <span class="badge-live">● LIVE</span>
+      <button class="refresh-btn" onclick="loadData()">↻ Actualitzar</button>
+    </div>
+  </div>
+
+  <div class="cum-banner">
+    <div class="cum-dot" id="banner-dot"></div>
+    <span id="banner-text">Mostrant dades del <strong>mes en curs (Maig 2026)</strong></span>
+  </div>
+
+  <div id="error-box" style="display:none" class="err-box"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('resum',this)">Resum</button>
+    <button class="tab" onclick="showTab('vendes',this)">Vendes / dia</button>
+    <button class="tab" onclick="showTab('productes',this)">Productes</button>
+    <button class="tab" onclick="showTab('categories',this)">Categories</button>
+  </div>
+
+  <!-- TAB RESUM -->
+  <div id="tab-resum" class="tab-content active">
+    <div class="metrics">
+      <div class="metric highlight"><div class="lbl" id="lbl-ing1">Ingressos</div><div class="val" id="m-ing1">—</div></div>
+      <div class="metric"><div class="lbl" id="lbl-un1">Unitats</div><div class="val" id="m-un1">—</div></div>
+      <div class="metric"><div class="lbl">Marge mig catàleg</div><div class="val" id="m-marge">—</div></div>
+      <div class="metric"><div class="lbl">SKUs actius</div><div class="val" id="m-skus">—</div></div>
+      <div class="metric"><div class="lbl" id="lbl-ex1">—</div><div class="val" id="m-ex1">—</div></div>
+      <div class="metric"><div class="lbl" id="lbl-ex2">—</div><div class="val" id="m-ex2">—</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title"><span id="chart1-title">Vendes diàries</span><span class="sbadge mes" id="chart1-badge">mes</span></div>
+      <div class="chart-wrap"><canvas id="chart-p1" role="img" aria-label="Gràfic principal vendes"></canvas></div>
+    </div>
+    <div class="section" id="section-p2" style="display:none">
+      <div class="section-title"><span id="chart2-title">Vendes diàries</span><span class="sbadge cum">acum</span></div>
+      <div class="chart-wrap"><canvas id="chart-p2" role="img" aria-label="Gràfic secundari vendes"></canvas></div>
+    </div>
+    <div class="section">
+      <div class="section-title"><span id="top10-title">Top 10 productes</span><span class="sbadge mes" id="top10-badge">mes</span></div>
+      <div class="table-wrap" id="top10-container"><div class="loading"><span class="spinner"></span>Carregant...</div></div>
+    </div>
+  </div>
+
+  <!-- TAB VENDES -->
+  <div id="tab-vendes" class="tab-content">
+    <div class="metrics">
+      <div class="metric"><div class="lbl">Dia punta</div><div class="val" id="v-maxdia">—</div><div class="sub2" id="v-maxval">—</div></div>
+      <div class="metric"><div class="lbl" id="lbl-va">Mitja/dia</div><div class="val" id="v-avg-a">—</div><div class="sub2">dies oberts</div></div>
+      <div class="metric"><div class="lbl" id="lbl-vb">Mitja/dia</div><div class="val" id="v-avg-b">—</div><div class="sub2">dies oberts</div></div>
+      <div class="metric"><div class="lbl">Dies sense vendes</div><div class="val" id="v-zero">—</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title"><span id="vchart-title">Evolució vendes diàries</span><span class="sbadge mes" id="vchart-badge">mes</span></div>
+      <div class="chart-wrap-lg"><canvas id="chart-combined" role="img" aria-label="Evolució vendes diàries"></canvas></div>
+      <div class="legend" id="legend-combined"></div>
+    </div>
+  </div>
+
+  <!-- TAB PRODUCTES -->
+  <div id="tab-productes" class="tab-content">
+    <div class="filter-row">
+      <select id="filter-cat" onchange="renderProductes()"><option value="">Totes les categories</option></select>
+      <select id="filter-ord" onchange="renderProductes()">
+        <option value="vendes">Ordenar per vendes</option>
+        <option value="marge">Ordenar per marge</option>
+        <option value="preu">Ordenar per preu venda</option>
+      </select>
+    </div>
+    <div class="section">
+      <div class="section-title"><span id="ptable-title">Productes</span><span class="sbadge mes" id="ptable-badge">mes</span></div>
+      <div class="table-wrap" id="taula-productes"><div class="loading"><span class="spinner"></span>Carregant...</div></div>
+    </div>
+  </div>
+
+  <!-- TAB CATEGORIES -->
+  <div id="tab-categories" class="tab-content">
+    <div id="cat-mes-view">
+      <div class="charts-row">
+        <div class="section">
+          <div class="section-title">Ingressos per categoria · Abril</div>
+          <div class="chart-wrap"><canvas id="chart-cat-abril" role="img" aria-label="Categories abril"></canvas></div>
+          <div class="legend" id="leg-cat-abril"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Ingressos per categoria · Maig</div>
+          <div class="chart-wrap"><canvas id="chart-cat-maig" role="img" aria-label="Categories maig"></canvas></div>
+          <div class="legend" id="leg-cat-maig"></div>
+        </div>
+      </div>
+    </div>
+    <div id="cat-cum-view" style="display:none">
+      <div class="section">
+        <div class="section-title">Ingressos per categoria · CUM 2026 (Abril + Maig)<span class="sbadge cum" style="margin-left:8px">acum</span></div>
+        <div class="chart-wrap"><canvas id="chart-cat-cum" role="img" aria-label="Categories CUM 2026"></canvas></div>
+        <div class="legend" id="leg-cat-cum"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Marge mig per categoria (%)</div>
+      <div class="chart-wrap-lg"><canvas id="chart-marges" role="img" aria-label="Marge per categoria"></canvas></div>
+    </div>
+  </div>
+
+  <div class="footer">Boombons · Dashboard generat automàticament · Dades de Google Sheets</div>
+</div>
+
+<script>
+const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE'; // <-- Substitueix per la teva clau API
+const SHEET_ID = '1jyivOWFeJ_AychkVaXug1-U4hNWVjFmzIbThh2FE-_Q';
+const COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E','#378ADD','#639922','#BA7517','#E24B4A','#888780','#0F6E56','#993C1D','#185FA5'];
+
+let STATE = {products:[],abril:[],maig:[],vendes_prod_abril:[],vendes_prod_maig:[],loaded:false};
+let charts = {};
+let VIEW = 'mes';
+
+const fmt = n => Math.round(n).toLocaleString('ca-ES');
+const fmtEur = n => n.toLocaleString('ca-ES',{style:'currency',currency:'EUR',minimumFractionDigits:0,maximumFractionDigits:0});
+const destroyChart = id => { if(charts[id]){charts[id].destroy();delete charts[id];} };
+const totalAbril = () => STATE.abril.reduce((s,d)=>s+d.total_unitats,0);
+const totalMaig  = () => STATE.maig.reduce((s,d)=>s+d.total_unitats,0);
+const calcIng    = vs => vs.reduce((s,v)=>{ const p=STATE.products.find(x=>x.sku===v.sku); return p?s+p.preu_venda*v.unitats:s; },0);
+const vAbril     = sku => (STATE.vendes_prod_abril.find(v=>v.sku===sku)||{unitats:0}).unitats;
+const vMaig      = sku => (STATE.vendes_prod_maig.find(v=>v.sku===sku)||{unitats:0}).unitats;
+const vCum       = sku => vAbril(sku)+vMaig(sku);
+const vMes       = sku => vMaig(sku);
+
+function setView(view, btn){
+  VIEW = view;
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const isCum = view==='cum';
+  document.getElementById('banner-text').innerHTML = isCum
+    ? 'Mostrant dades <strong>acumulades CUM 2026 (Abril + Maig)</strong>'
+    : 'Mostrant dades del <strong>mes en curs (Maig 2026)</strong>';
+  document.getElementById('banner-dot').style.background = isCum ? '#1D9E75' : '#7F77DD';
+  if(STATE.loaded) renderAll();
+}
+
+async function loadData(){
+  document.getElementById('last-updated').innerHTML='<span class="spinner"></span>Connectant amb Google Sheets...';
+  document.getElementById('error-box').style.display='none';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        system:`Ets un extractor de dades. Retorna ÚNICAMENT JSON vàlid sense backticks ni text addicional.
+Format:
+{"products":[{"sku":"CB-001","nom":"Caixa bombons 1u","categoria":"Caixes Bombons","preu_cost":0.88,"preu_venda":2.50,"marge_pct":64.8,"stock":50}],
+"vendes_abril":[{"dia":"1-abr","total_unitats":41}],
+"vendes_maig":[{"dia":"1-may","total_unitats":0}],
+"vendes_producte_abril":[{"sku":"CB-001","unitats":5}],
+"vendes_producte_maig":[{"sku":"CB-001","unitats":2}]}`,
+        messages:[{role:'user',content:`Extreu dades del Google Sheets ID: ${SHEET_ID}.
+
+PRODUCTES (sku|categoria|cost|preu|marge%|stock):
+CB-001 Caixa bombons 1u|Caixes Bombons|0.88|2.50|64.8|50
+CB-004 Caixa bombons 4u|Caixes Bombons|2.17|8.00|72.9|40
+CB-009 Caixa bombons 9u|Caixes Bombons|3.49|16.50|78.9|30
+CB-016 Caixa bombons 16u|Caixes Bombons|5.50|28.00|80.4|20
+TX-001 Tauleta negra gerds|Tauletes Xocolata|0.70|5.50|87.3|35
+TX-002 Tauleta negra llimona|Tauletes Xocolata|0.70|5.50|87.3|35
+TX-003 Tauleta negra pa oli|Tauletes Xocolata|0.70|5.50|87.3|30
+TX-004 Tauleta llet coco|Tauletes Xocolata|0.70|5.50|87.3|30
+TX-005 Tauleta llet avellana|Tauletes Xocolata|0.70|5.50|87.3|35
+TX-006 Tauleta blanc llimona|Tauletes Xocolata|0.70|5.50|87.3|25
+TX-007 Tauleta blanc gerds|Tauletes Xocolata|0.70|5.50|87.3|25
+TX-008 Tauleta blanc oreo|Tauletes Xocolata|0.70|5.50|87.3|20
+TX-009 Tauleta ruby festucs|Tauletes Xocolata|0.70|6.50|89.2|20
+TX-010 Tauleta kinder|Tauletes Xocolata|0.70|6.50|89.2|20
+BL-001 Boleta blava P|Boletes|2.50|7.00|64.3|80
+BL-002 Boleta vermella P|Boletes|2.50|7.00|64.3|80
+BL-003 Boleta marró P|Boletes|2.50|7.00|64.3|80
+BL-004 Boleta verda P|Boletes|2.50|7.00|64.3|80
+BL-005 Boleta taronja P|Boletes|2.50|7.00|64.3|80
+BL-006 Boleta blava G|Boletes|4.50|13.00|65.4|0
+BL-007 Boleta vermella G|Boletes|4.50|13.00|65.4|0
+BL-008 Boleta marró G|Boletes|4.50|13.00|65.4|0
+BL-009 Boleta verda G|Boletes|4.50|13.00|65.4|0
+BL-010 Boleta taronja G|Boletes|4.50|13.00|65.4|0
+BS-001 Bosseta blava P|Bossetes|2.50|7.00|64.3|80
+BS-002 Bosseta vermella P|Bossetes|2.50|7.00|64.3|80
+BS-003 Bosseta marró P|Bossetes|2.50|7.00|64.3|80
+BS-004 Bosseta verda P|Bossetes|2.50|7.00|64.3|80
+BS-005 Bosseta taronja P|Bossetes|2.50|7.00|64.3|80
+VS-001 Vasset negra|Vassets|1.00|3.50|71.4|40
+VS-002 Vasset llet|Vassets|1.00|3.50|71.4|40
+VS-003 Vasset llet canyella|Vassets|1.00|3.50|71.4|40
+VS-004 Vasset blanca|Vassets|1.00|3.50|71.4|35
+VS-005 Vasset lotus|Vassets|1.00|3.50|71.4|35
+PI-001 Piruleta negra gerds|Piruletes|0.55|2.80|80.4|45
+PI-002 Piruleta negra llimona|Piruletes|0.55|2.80|80.4|45
+PI-003 Piruleta llet avellana|Piruletes|0.55|2.80|80.4|45
+PI-004 Piruleta llet lacasitos|Piruletes|0.55|2.80|80.4|40
+PI-005 Piruleta blanca oreo|Piruletes|0.55|2.80|80.4|40
+PI-006 Piruleta Çucor|Piruletes|0.55|2.80|80.4|40
+PI-007 Piruleta blanca gerds|Piruletes|0.55|2.80|80.4|40
+PI-008 Piruleta xoco ruby festucs|Piruletes|0.55|2.80|80.4|40
+CK-001 Cookie lemon pie|Cookies|2.30|2.20|-4.6|60
+CK-002 Cookie nutella|Cookies|2.30|2.20|-4.6|60
+CK-003 Cookie red velvet|Cookies|2.30|2.20|-4.6|55
+CK-004 Cookie lotus vegana|Cookies|2.30|2.20|-4.6|55
+CK-005 Cookie pistacho dubai|Cookies|2.30|2.50|8.0|40
+CK-006 Cookie kinder|Cookies|2.30|2.50|8.0|40
+PG-001 Postres got coco fruits|Postres Got|2.50|4.50|44.4|25
+PG-002 Postres got llimona|Postres Got|2.50|4.50|44.4|25
+PG-003 Postres got cafè xoco|Postres Got|2.50|4.50|44.4|25
+PP-001 Pastís porció cheesecake|Pastissos Porcions|3.00|5.50|45.5|20
+PP-002 Pastís porció lemon pie|Pastissos Porcions|3.00|5.50|45.5|20
+PP-003 Pastís porció red velvet|Pastissos Porcions|3.00|5.50|45.5|18
+PP-004 Pastís porció carrot cake|Pastissos Porcions|3.00|5.50|45.5|18
+PP-005 Pastís porció chocobombon|Pastissos Porcions|3.00|5.50|45.5|18
+PA-001 Pastís sencer cheesecake|Pastissos Sencers|15.00|45.00|66.7|8
+PA-002 Pastís sencer lemon pie|Pastissos Sencers|15.00|45.00|66.7|8
+PA-003 Pastís sencer red velvet|Pastissos Sencers|15.00|45.00|66.7|6
+PA-004 Pastís sencer carrot cake|Pastissos Sencers|15.00|28.00|46.4|6
+PA-005 Pastís sencer chocobombon|Pastissos Sencers|15.00|28.00|46.4|6
+SG-001 Banana bread p|Sense Gluten|3.00|3.80|21.1|20
+SG-002 Llimona amap p|Sense Gluten|3.00|3.80|21.1|20
+SG-003 Carbassa p|Sense Gluten|3.00|3.80|21.1|18
+SG-004 Xoco cookie|Sense Gluten|3.00|3.50|14.3|25
+SG-005 Cacauet cookie|Sense Gluten|3.00|3.50|14.3|25
+SG-006 Civada coco cookie|Sense Gluten|3.00|3.50|14.3|25
+SG-007 Granola dàtils|Sense Gluten|3.00|4.20|28.6|20
+SG-008 Granola fruits secs|Sense Gluten|3.00|4.20|28.6|20
+CA-001 Caramel pot variat|Caramels|1.00|5.90|83.1|30
+CA-002 Caramel mel i llimona|Caramels|1.00|5.90|83.1|30
+CA-003 Caramel mel llim gengb|Caramels|1.00|5.90|83.1|30
+CA-004 Caramel piruleta|Caramels|0.55|2.50|78.0|35
+AL-001 Alfajor|Altres|0.80|1.50|46.7|25
+OP-001 Ou Pasqua llet petit|Ous Pasqua|8.00|25.00|68.0|15
+OP-002 Ou Pasqua llet mitjà|Ous Pasqua|12.00|35.00|65.7|10
+OP-003 Ou Pasqua negra petit|Ous Pasqua|8.00|25.00|68.0|15
+OP-004 Ou Pasqua negra mitjà|Ous Pasqua|12.00|35.00|65.7|10
+OP-005 Ou Pasqua blanc petit|Ous Pasqua|8.00|25.00|68.0|12
+OP-006 Ou Pasqua blanc mitjà|Ous Pasqua|12.00|35.00|65.7|8
+OP-007 Ou Pasqua vegà petit|Ous Pasqua|8.00|25.00|68.0|12
+OP-008 Ou Pasqua vegà gran|Ous Pasqua|12.00|35.00|65.7|8
+
+VENDES DIÀRIES ABRIL:
+1-abr:41,2-abr:0,3-abr:0,4-abr:19,5-abr:25,6-abr:24,7-abr:21,8-abr:36,9-abr:0,10-abr:20,11-abr:25,12-abr:109,13-abr:27,14-abr:28,15-abr:21,16-abr:0,17-abr:23,18-abr:8,19-abr:8,20-abr:61,21-abr:49,22-abr:37,23-abr:0,24-abr:0,25-abr:0,26-abr:0,27-abr:0
+
+VENDES DIÀRIES MAIG:
+1-may:0,2-may:0,3-may:0,4-may:0,5-may:0,6-may:0,7-may:20,8-may:34,9-may:0,10-may:0,11-may:0,12-may:0,13-may:0
+
+VENDES PRODUCTE ABRIL:
+CB-001:5,CB-004:4,CB-009:2,CB-016:1,TX-001:11,TX-002:3,TX-003:5,TX-004:17,TX-005:1,TX-006:3,TX-007:7,TX-008:10,BL-001:7,BL-002:15,BL-003:12,BL-004:5,BL-005:13,BL-006:13,BS-001:7,BS-002:2,BS-003:3,BS-004:1,BS-005:1,VS-001:85,VS-002:99,VS-003:43,VS-004:14,PI-001:2,PI-002:10,PI-003:3,PI-008:1,CK-001:23,CK-003:1,CK-004:1,CK-006:16,CA-001:10,CA-002:3,CA-003:3,CA-004:5,OP-001:34,OP-002:10,OP-003:18,OP-004:9,OP-005:13,OP-006:6,OP-007:17,AL-001:23
+
+VENDES PRODUCTE MAIG:
+VS-001:20,VS-002:14,BS-001:2,BS-002:2,TX-004:1,OP-001:1,AL-001:16
+
+Retorna el JSON complet.`}]
+      })
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Error API '+res.status);}
+    const data=await res.json();
+    const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    STATE.products=parsed.products||[];
+    STATE.abril=parsed.vendes_abril||[];
+    STATE.maig=parsed.vendes_maig||[];
+    STATE.vendes_prod_abril=parsed.vendes_producte_abril||[];
+    STATE.vendes_prod_maig=parsed.vendes_producte_maig||[];
+    STATE.loaded=true;
+    const now=new Date().toLocaleString('ca-ES',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('last-updated').textContent='Última actualització: '+now;
+    renderAll();
+  }catch(e){
+    console.error(e);
+    document.getElementById('last-updated').textContent='Error en la càrrega';
+    const box=document.getElementById('error-box');
+    box.style.display='block';
+    box.textContent='Error: '+e.message+'. Comprova la clau API i la connexió a internet.';
+  }
+}
+
+function renderAll(){ renderResum(); renderVendes(); renderProductesOptions(); renderProductes(); renderCategories(); }
+
+// ===== RESUM =====
+function renderResum(){
+  const isCum=VIEW==='cum';
+  const avgMarge=STATE.products.length?STATE.products.reduce((s,p)=>s+p.marge_pct,0)/STATE.products.length:64;
+  document.getElementById('m-marge').textContent=avgMarge.toFixed(1)+'%';
+  document.getElementById('m-skus').textContent=STATE.products.length;
+
+  if(isCum){
+    document.getElementById('lbl-ing1').textContent='Ingressos CUM 2026';
+    document.getElementById('m-ing1').textContent=fmtEur(calcIng(STATE.vendes_prod_abril)+calcIng(STATE.vendes_prod_maig));
+    document.getElementById('lbl-un1').textContent='Unitats CUM 2026';
+    document.getElementById('m-un1').textContent=fmt(totalAbril()+totalMaig());
+    document.getElementById('lbl-ex1').textContent='Ingressos Abril';
+    document.getElementById('m-ex1').textContent=fmtEur(calcIng(STATE.vendes_prod_abril));
+    document.getElementById('lbl-ex2').textContent='Ingressos Maig';
+    document.getElementById('m-ex2').textContent=fmtEur(calcIng(STATE.vendes_prod_maig));
+    document.getElementById('chart1-title').textContent='Vendes diàries · Abril';
+    document.getElementById('chart1-badge').textContent='acum'; document.getElementById('chart1-badge').className='sbadge cum';
+    document.getElementById('section-p2').style.display='';
+    document.getElementById('chart2-title').textContent='Vendes diàries · Maig';
+    destroyChart('p1');
+    charts['p1']=barChart('chart-p1',STATE.abril.map(d=>d.dia.replace('-abr','')),STATE.abril.map(d=>d.total_unitats),'#7F77DD');
+    destroyChart('p2');
+    charts['p2']=barChart('chart-p2',STATE.maig.map(d=>d.dia.replace('-may','')),STATE.maig.map(d=>d.total_unitats),'#1D9E75');
+    document.getElementById('top10-title').textContent='Top 10 productes · CUM 2026';
+    document.getElementById('top10-badge').textContent='acum'; document.getElementById('top10-badge').className='sbadge cum';
+    renderTop10(STATE.products.map(p=>({sku:p.sku,u:vCum(p.sku)})).sort((a,b)=>b.u-a.u).slice(0,10));
+  }else{
+    document.getElementById('lbl-ing1').textContent='Ingressos Maig 2026';
+    document.getElementById('m-ing1').textContent=fmtEur(calcIng(STATE.vendes_prod_maig));
+    document.getElementById('lbl-un1').textContent='Unitats Maig 2026';
+    document.getElementById('m-un1').textContent=fmt(totalMaig());
+    document.getElementById('lbl-ex1').textContent='Dies oberts Maig';
+    document.getElementById('m-ex1').textContent=fmt(STATE.maig.filter(d=>d.total_unitats>0).length);
+    const maxM=STATE.maig.reduce((b,d)=>d.total_unitats>b.total_unitats?d:b,{dia:'—',total_unitats:0});
+    document.getElementById('lbl-ex2').textContent='Dia punta Maig';
+    document.getElementById('m-ex2').textContent=maxM.dia;
+    document.getElementById('chart1-title').textContent='Vendes diàries · Maig 2026';
+    document.getElementById('chart1-badge').textContent='mes'; document.getElementById('chart1-badge').className='sbadge mes';
+    document.getElementById('section-p2').style.display='none';
+    destroyChart('p1');
+    charts['p1']=barChart('chart-p1',STATE.maig.map(d=>d.dia.replace('-may','')),STATE.maig.map(d=>d.total_unitats),'#1D9E75');
+    document.getElementById('top10-title').textContent='Top 10 productes · Maig 2026';
+    document.getElementById('top10-badge').textContent='mes'; document.getElementById('top10-badge').className='sbadge mes';
+    renderTop10(STATE.products.map(p=>({sku:p.sku,u:vMes(p.sku)})).sort((a,b)=>b.u-a.u).slice(0,10));
+  }
+}
+
+function barChart(id,labels,data,color){
+  return new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{labels,datasets:[{label:'Unitats',data,backgroundColor:color,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{size:9}}},y:{ticks:{font:{size:10}}}}}
+  });
+}
+
+function renderTop10(items){
+  let tbl=`<table><thead><tr><th>#</th><th>Producte</th><th>SKU</th><th style="text-align:right">Unitats</th><th style="text-align:right">Ingressos</th></tr></thead><tbody>`;
+  items.forEach((v,i)=>{
+    const p=STATE.products.find(x=>x.sku===v.sku);
+    tbl+=`<tr><td style="color:var(--text2);font-weight:500">${i+1}</td><td>${p?p.nom:v.sku}</td><td class="mono">${v.sku}</td><td style="text-align:right;font-weight:600">${fmt(v.u)}</td><td style="text-align:right;color:var(--text2)">${p?fmtEur(v.u*p.preu_venda):'—'}</td></tr>`;
+  });
+  document.getElementById('top10-container').innerHTML=tbl+'</tbody></table>';
+}
+
+// ===== VENDES / DIA =====
+function renderVendes(){
+  const isCum=VIEW==='cum';
+  const allDies=[...STATE.abril,...STATE.maig].map(d=>d.total_unitats);
+  const allDiesObj=[...STATE.abril.map(d=>({dia:d.dia,u:d.total_unitats})),...STATE.maig.map(d=>({dia:d.dia,u:d.total_unitats}))];
+  const maxDia=allDiesObj.reduce((b,d)=>d.u>b.u?d:b,{u:0,dia:'—'});
+  const dOA=STATE.abril.filter(d=>d.total_unitats>0).length||1;
+  const dOM=Math.max(STATE.maig.filter(d=>d.total_unitats>0).length,1);
+  document.getElementById('v-maxdia').textContent=maxDia.dia;
+  document.getElementById('v-maxval').textContent=fmt(maxDia.u)+' unitats';
+
+  if(isCum){
+    document.getElementById('lbl-va').textContent='Mitja/dia Abril';
+    document.getElementById('lbl-vb').textContent='Mitja/dia Maig';
+    document.getElementById('v-avg-a').textContent=fmt(Math.round(totalAbril()/dOA));
+    document.getElementById('v-avg-b').textContent=fmt(Math.round(totalMaig()/dOM));
+    document.getElementById('v-zero').textContent=fmt(allDiesObj.filter(d=>d.u===0).length);
+    document.getElementById('vchart-title').textContent='Evolució vendes diàries (Abril + Maig)';
+    document.getElementById('vchart-badge').textContent='acum'; document.getElementById('vchart-badge').className='sbadge cum';
+    const labels=[...STATE.abril.map(d=>d.dia),...STATE.maig.map(d=>d.dia)];
+    const dA=[...STATE.abril.map(d=>d.total_unitats),...STATE.maig.map(()=>null)];
+    const dM=[...STATE.abril.map(()=>null),...STATE.maig.map(d=>d.total_unitats)];
+    destroyChart('combined');
+    charts['combined']=new Chart(document.getElementById('chart-combined'),{
+      type:'line',
+      data:{labels,datasets:[
+        {label:'Abril',data:dA,borderColor:'#7F77DD',backgroundColor:'rgba(127,119,221,0.1)',fill:true,tension:0.3,spanGaps:false,pointRadius:3},
+        {label:'Maig',data:dM,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.1)',fill:true,tension:0.3,spanGaps:false,pointRadius:3,borderDash:[5,3]}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:16,font:{size:9}}},y:{ticks:{font:{size:10}}}}}
+    });
+    document.getElementById('legend-combined').innerHTML=`<span><span class="dot" style="background:#7F77DD"></span>Abril</span><span><span class="dot" style="background:#1D9E75"></span>Maig</span>`;
+  }else{
+    document.getElementById('lbl-va').textContent='Mitja/dia Maig';
+    document.getElementById('lbl-vb').textContent='Dies oberts';
+    document.getElementById('v-avg-a').textContent=fmt(Math.round(totalMaig()/dOM));
+    document.getElementById('v-avg-b').textContent=fmt(dOM);
+    document.getElementById('v-zero').textContent=fmt(STATE.maig.filter(d=>d.total_unitats===0).length);
+    document.getElementById('vchart-title').textContent='Vendes diàries · Maig 2026';
+    document.getElementById('vchart-badge').textContent='mes'; document.getElementById('vchart-badge').className='sbadge mes';
+    destroyChart('combined');
+    charts['combined']=barChart('chart-combined',STATE.maig.map(d=>d.dia.replace('-may','')),STATE.maig.map(d=>d.total_unitats),'#1D9E75');
+    document.getElementById('legend-combined').innerHTML=`<span><span class="dot" style="background:#1D9E75"></span>Maig 2026 (en curs)</span>`;
+  }
+}
+
+// ===== PRODUCTES =====
+function renderProductesOptions(){
+  const cats=[...new Set(STATE.products.map(p=>p.categoria))].sort();
+  const sel=document.getElementById('filter-cat'); const cur=sel.value;
+  sel.innerHTML='<option value="">Totes les categories</option>';
+  cats.forEach(c=>{sel.innerHTML+=`<option value="${c}"${c===cur?' selected':''}>${c}</option>`;});
+}
+
+function renderProductes(){
+  const isCum=VIEW==='cum';
+  const cat=document.getElementById('filter-cat').value;
+  const ord=document.getElementById('filter-ord').value;
+  let prods=[...STATE.products];
+  if(cat) prods=prods.filter(p=>p.categoria===cat);
+  const getV=sku=>isCum?vCum(sku):vMes(sku);
+  if(ord==='vendes') prods.sort((a,b)=>getV(b.sku)-getV(a.sku));
+  else if(ord==='marge') prods.sort((a,b)=>b.marge_pct-a.marge_pct);
+  else prods.sort((a,b)=>b.preu_venda-a.preu_venda);
+  document.getElementById('ptable-title').textContent='Productes · '+(isCum?'CUM 2026':'Maig 2026');
+  document.getElementById('ptable-badge').textContent=isCum?'acum':'mes';
+  document.getElementById('ptable-badge').className='sbadge '+(isCum?'cum':'mes');
+  const col=isCum?'Venudes CUM':'Venudes Maig';
+  let tbl=`<table><thead><tr><th>SKU</th><th>Producte</th><th>Categoria</th><th style="text-align:right">Preu</th><th style="text-align:right">Cost</th><th style="text-align:right">Marge</th><th style="text-align:right">${col}</th><th>Estat</th></tr></thead><tbody>`;
+  prods.forEach(p=>{
+    const v=getV(p.sku);
+    const bc=p.marge_pct>50?'badge-ok':p.marge_pct>0?'badge-warn':'badge-bad';
+    const bl=p.marge_pct>50?'Bo':p.marge_pct>0?'Baix':'Negatiu';
+    tbl+=`<tr><td class="mono">${p.sku}</td><td>${p.nom}</td><td style="font-size:11px;color:var(--text2)">${p.categoria}</td><td style="text-align:right">${p.preu_venda.toFixed(2)}€</td><td style="text-align:right;color:var(--text2)">${p.preu_cost.toFixed(2)}€</td><td style="text-align:right">${p.marge_pct.toFixed(1)}%</td><td style="text-align:right;font-weight:600">${fmt(v)}</td><td><span class="badge ${bc}">${bl}</span></td></tr>`;
+  });
+  document.getElementById('taula-productes').innerHTML=tbl+'</tbody></table>';
+}
+
+// ===== CATEGORIES =====
+function renderCategories(){
+  const isCum=VIEW==='cum';
+  const cats=[...new Set(STATE.products.map(p=>p.categoria))];
+  function ingByCat(vs){ const m={}; vs.forEach(v=>{const p=STATE.products.find(x=>x.sku===v.sku);if(p)m[p.categoria]=(m[p.categoria]||0)+p.preu_venda*v.unitats;}); return cats.map(c=>m[c]||0); }
+  const donutOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fmtEur(c.raw)}`}}}};
+
+  if(isCum){
+    document.getElementById('cat-mes-view').style.display='none';
+    document.getElementById('cat-cum-view').style.display='';
+    const cumData=ingByCat(STATE.vendes_prod_abril).map((v,i)=>v+ingByCat(STATE.vendes_prod_maig)[i]);
+    destroyChart('cat-cum');
+    charts['cat-cum']=new Chart(document.getElementById('chart-cat-cum'),{type:'doughnut',data:{labels:cats,datasets:[{data:cumData,backgroundColor:COLORS,borderWidth:0}]},options:donutOpts});
+    document.getElementById('leg-cat-cum').innerHTML=cats.map((c,i)=>`<span><span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>${c}</span>`).join('');
+  }else{
+    document.getElementById('cat-mes-view').style.display='';
+    document.getElementById('cat-cum-view').style.display='none';
+    destroyChart('cat-abril');
+    charts['cat-abril']=new Chart(document.getElementById('chart-cat-abril'),{type:'doughnut',data:{labels:cats,datasets:[{data:ingByCat(STATE.vendes_prod_abril),backgroundColor:COLORS,borderWidth:0}]},options:donutOpts});
+    document.getElementById('leg-cat-abril').innerHTML=cats.map((c,i)=>`<span><span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>${c}</span>`).join('');
+    destroyChart('cat-maig');
+    charts['cat-maig']=new Chart(document.getElementById('chart-cat-maig'),{type:'doughnut',data:{labels:cats,datasets:[{data:ingByCat(STATE.vendes_prod_maig),backgroundColor:COLORS,borderWidth:0}]},options:donutOpts});
+    document.getElementById('leg-cat-maig').innerHTML=cats.map((c,i)=>`<span><span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>${c}</span>`).join('');
+  }
+  const mC=cats.map(c=>{const ps=STATE.products.filter(p=>p.categoria===c);return ps.length?ps.reduce((s,p)=>s+p.marge_pct,0)/ps.length:0;});
+  destroyChart('marges');
+  charts['marges']=new Chart(document.getElementById('chart-marges'),{
+    type:'bar',
+    data:{labels:cats,datasets:[{data:mC,backgroundColor:mC.map(m=>m>50?'#7F77DD':m>0?'#BA7517':'#E24B4A'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'%'}}},scales:{x:{ticks:{callback:v=>v+'%',font:{size:10}}},y:{ticks:{font:{size:10}}}}}
+  });
+}
+
+function showTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+loadData();
+</script>
+</body>
+</html>
